@@ -1,26 +1,47 @@
-# AI Reasoning Platform
+### Tech Stack
 
-Full-stack multi-model LLM interaction platform for studying reasoning support, retrieval behavior, and response quality across AI systems.
+**Backend**: Python, FastAPI, httpx, Pydantic, sentence-transformers, PyMuPDF, NumPy
 
-## Quick Start
+**Frontend**: React, TypeScript, Vite
 
-### 1. Backend
+**Embeddings**: all-MiniLM-L6-v2 (local, no API calls — runs on CPU)
+
+**LLM Providers**: Groq (LLaMA, Qwen — free tier), OpenAI (GPT models)
+
+**Infrastructure**: Docker, Docker Compose, NGINX-ready
+
+### Key Design Decisions
+
+- **Local embeddings over API-based**: Using sentence-transformers locally eliminates embedding API costs and rate limits entirely. The all-MiniLM-L6-v2 model is ~90MB and runs fast on CPU.
+- **JSONL vector store over ChromaDB/FAISS**: Fully inspectable, no binary dependencies, trivially portable.
+- **OpenAI-compatible API format**: Both Groq and OpenAI use the same request format, so adding any compatible provider is a one-line config change.
+- **Prompt-based interaction modes**: The three modes are implemented as system prompt templates, not separate code paths.
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.11+
+- Node.js 18+
+- API key from [Groq](https://console.groq.com) (free) and/or [OpenAI](https://platform.openai.com)
+
+### 1. Backend Setup
 
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
+source venv/bin/activate       # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-# Copy and fill in your API keys
 cp .env.example .env
-# Edit .env with your OPENAI_API_KEY and GROQ_API_KEY
+# Edit .env and add your actual API keys
 
-# Run
 uvicorn app.main:app --reload --port 8000
 ```
 
-### 2. Frontend
+The first document upload will download the embedding model (~90MB, one-time).
+
+### 2. Frontend Setup
 
 ```bash
 cd frontend
@@ -28,55 +49,33 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173
+Open [http://localhost:5173](http://localhost:5173)
 
-### 3. Using It
+### 3. Using the Platform
 
-1. Open Settings → Upload your thesis PDF (or any document)
-2. Select models to compare (need API keys set)
-3. Choose an interaction mode (Direct / Hint-First / Guided Reasoning)
-4. Configure retrieval settings (metric, Top-K)
-5. Ask questions → see side-by-side responses
-6. Hit "Critique" on any response to get automated evaluation
+1. Click **Settings** in the top right
+2. Select one or more models (Groq models are free)
+3. Click **Upload Document** and select a PDF, TXT, or MD file
+4. Choose an interaction mode and retrieval settings
+5. Type a question and hit **Send**
+6. Click **Critique** on any response to get evaluation scores
 
 ### Docker
 
 ```bash
-# Copy env file
 cp backend/.env.example backend/.env
-# Edit with your keys
-
+# Fill in your API keys
 docker-compose up --build
 ```
 
-## Architecture
+## What You Can Study With This
 
-```
-backend/
-  app/
-    routes/        # API endpoints (chat, models, documents, critique, insights)
-    services/      # Core logic (LLM provider, vector store, ingestion, critique, insights, logger)
-    models/        # Pydantic schemas
-    config.py      # Model configs, interaction modes
-  data/            # Vectors, logs, uploads (persisted)
+**Model behavior differences**: Same question, same context — how does LLaMA 3.3 70B compare to Qwen 3 32B? Where do they diverge? Which hallucinates more on technical content?
 
-frontend/
-  src/
-    App.tsx        # Main UI — chat, comparison, retrieval inspector, critique panel
-```
+**Interaction mode effects**: Does hint-first prompting produce more grounded answers than direct response? Does guided reasoning improve completeness scores?
 
-## API Keys
+**Retrieval sensitivity**: How does changing the similarity metric affect which chunks get retrieved? Does Top-K=3 vs Top-K=10 change answer quality?
 
-- **Groq** (free): https://console.groq.com — gives access to LLaMA 3, Qwen
-- **OpenAI**: https://platform.openai.com — GPT models + embeddings
+**Critique consistency**: Does the critique engine score the same response consistently across runs?
 
-## Features
-
-- Multi-model side-by-side comparison (LLaMA, Qwen, GPT)
-- Configurable interaction modes (direct, hint-first, guided reasoning)
-- RAG pipeline with semantic chunking and configurable similarity metrics
-- Chunk inspection and retrieval visualization
-- Multi-round critique engine with correctness/groundedness/completeness scoring
-- Automated insight generation
-- JSONL interaction logging for analysis
-- Extensible — add new models by editing config.py
+## Project Structure
